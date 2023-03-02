@@ -86,7 +86,7 @@ h1 {
   font-size: 20px;
 }
 
-input-container input:focus {
+.input-container input:focus {
   outline: none;
 }
 
