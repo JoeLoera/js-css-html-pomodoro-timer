@@ -1,17 +1,24 @@
 const taskContainer = document.querySelector(".task-container");
+const submitButton = document.querySelector(".submit-button");
+const timeLeftDisplay = document.querySelector("#time-left");
+const sliderFill = document.querySelector(".fill");
+
+const startCount = 25 * 60;
+let timeLeft = startCount;
+let timerId;
 
 let tasks = [
   {
     name: "Practice CSS Animations",
-    priority: 1,
+    priority: 0,
   },
   {
     name: "Dev Community Work",
-    priority: 4,
+    priority: 2,
   },
   {
     name: "Algorithm Studies",
-    priority: 3,
+    priority: 1,
   },
 ];
 
@@ -20,8 +27,60 @@ const descendingTasks = tasks.sort(
   (taskA, taskB) => taskA.priority - taskB.priority
 );
 
+//Convert seconds to minute format for display
+function convertToMin(secondsLeft) {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft - minutes * 60;
+  return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+}
+
+//Handle the start/pause functionality
+function handleClick(button) {
+  switch (button.textContent) {
+    case "ACTIVE":
+      button.textContent = "PAUSED";
+      clearInterval(timerId);
+      break;
+    case "PAUSED":
+      button.textContent = "ACTIVE";
+      countDown(button);
+      break;
+    default:
+      const allButtons = document.querySelectorAll(".controller-button");
+      allButtons.forEach((button) => {
+        button.textContent = "START";
+        button.classList.remove("active-button");
+        clearInterval(timerId);
+        timeLeft = startCount;
+        timeLeftDisplay.textContent = convertToMin(timeLeft);
+      });
+
+      button.textContent = "ACTIVE";
+      button.classList.add("active-button");
+      countDown(button);
+      break;
+  }
+}
+
+//Count down timer
+function countDown(button) {
+  timerId = setInterval(() => {
+    timeLeft--;
+    timeLeftDisplay.textContent = convertToMin(timeLeft);
+    sliderFill.style.width = (timeLeft / startCount) * 100 + "%";
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      delete descendingTasks[button.id];
+      button.parentNode.remove();
+      timeLeft = startCount;
+      timeLeftDisplay.textContent = convertToMin(timeLeft);
+    }
+  }, 1000);
+}
+
+//Create tasks in the array
 function render() {
-  descendingTasks.forEach((task) => {
+  descendingTasks.forEach((task, index) => {
     const taskBlock = document.createElement("div");
     const deleteElement = document.createElement("p");
     const title = document.createElement("p");
@@ -35,8 +94,36 @@ function render() {
     title.textContent = task.name;
     controller.textContent = "START";
 
+    controller.id = index;
+
+    deleteElement.addEventListener("click", deleteTask);
+    controller.addEventListener("click", () => handleClick(controller));
+
     taskBlock.append(deleteElement, title, controller);
     taskContainer.append(taskBlock);
   });
 }
 render();
+
+//Delete a task
+function deleteTask(e) {
+  e.target.parentNode.remove();
+  delete descendingTasks[e.target.parentNode.lastChild.id];
+}
+
+//Add a task
+function addTask() {
+  const inputElement = document.querySelector("input");
+  const value = inputElement.value;
+  if (value) {
+    taskContainer.innerHTML = "";
+    inputElement.value = "";
+    tasks.push({
+      name: value,
+      priority: tasks.length,
+    });
+    render();
+  }
+}
+
+submitButton.addEventListener("click", addTask);
